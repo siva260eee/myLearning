@@ -95,6 +95,7 @@ def exercise_5():
     return category
 
 def main():
+    pass
     # """Run all exercises"""
     # print("=" * 50)
     # print("EXERCISE 1: Variables and Data Types")
