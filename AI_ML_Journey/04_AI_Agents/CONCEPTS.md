@@ -191,48 +191,255 @@ Complex Task
 - Plan for each subgoal
 - Combine solutions
 
-### 8. Multi-Agent Systems
+### 8. Multi-Agent Systems & Workflows
 
 #### Why Multiple Agents?
-- Specialization
-- Parallel processing
-- Diverse perspectives
-- Robustness
+- **Specialization**: Each agent excels at specific tasks
+- **Parallel processing**: Handle multiple tasks simultaneously
+- **Diverse perspectives**: Different approaches to problem-solving
+- **Robustness**: Fault tolerance through redundancy
+- **Scalability**: Easier to add new capabilities
+
+#### Multi-Agent Workflow Orchestration
+
+A multi-agent workflow orchestrates specialized AI agents to collaboratively complete complex tasks through:
+
+**1. Role Definition**
+- Define clear roles and responsibilities
+- Assign specific expertise to each agent
+- Example roles: Researcher, Analyzer, Writer, Reviewer, Executor
+
+**2. Communication Setup**
+- Establish protocols for agent-to-agent communication
+- Define message formats and data exchange
+- Implement shared memory/context
+
+**3. Task Decomposition**
+- Break complex tasks into subtasks
+- Assign subtasks to appropriate agents
+- Define dependencies and execution order
+
+**4. Coordination Mechanisms**
+- Synchronize agent activities
+- Handle conflicts and dependencies
+- Aggregate results from multiple agents
 
 #### Communication Patterns
 
-**Cooperative**
-- Agents work together
-- Share information
-- Common goal
+**Cooperative (Collaborative)**
+- Agents work together toward common goal
+- Share information and insights
+- Example: Research team where one agent searches, another summarizes, another validates
 
-**Competitive**
-- Agents compete
-- Adversarial setup
-- Improve through competition
-
-**Hierarchical**
-- Manager-worker structure
-- Delegation
-- Coordination
-
-#### Example: AutoGen (Microsoft)
 ```python
-assistant = AssistantAgent(
-    name="assistant",
+# Cooperative workflow example
+researcher = Agent(role="researcher", goal="Find information")
+analyzer = Agent(role="analyzer", goal="Extract insights")
+writer = Agent(role="writer", goal="Create report")
+
+# Workflow: researcher → analyzer → writer
+```
+
+**Competitive (Adversarial)**
+- Agents compete or challenge each other
+- Adversarial setup improves robustness
+- Example: Debate agents for better decision making
+
+```python
+# Competitive workflow
+proposer = Agent(role="proposer")
+critic = Agent(role="critic")
+# Proposer suggests solutions, critic finds flaws
+```
+
+**Hierarchical (Manager-Worker)**
+- Manager agent delegates tasks
+- Worker agents execute assignments
+- Manager coordinates and synthesizes results
+
+```python
+# Hierarchical workflow
+manager = ManagerAgent()
+workers = [SpecialistAgent(role) for role in roles]
+# Manager decomposes task, assigns to workers, aggregates results
+```
+
+**Sequential (Pipeline)**
+- Linear flow of information
+- Each agent processes and passes to next
+- Example: Data pipeline, content creation workflow
+
+**Parallel (Concurrent)**
+- Multiple agents work simultaneously
+- Independent tasks executed in parallel
+- Results merged at the end
+
+#### Workflow Orchestration Frameworks
+
+**AutoGen (Microsoft)**
+```python
+from autogen import AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
+
+# Define specialized agents
+researcher = AssistantAgent(
+    name="researcher",
+    system_message="You are a research specialist...",
     llm_config=llm_config
 )
 
-user_proxy = UserProxyAgent(
-    name="user",
-    human_input_mode="NEVER"
+analyst = AssistantAgent(
+    name="analyst",
+    system_message="You analyze data and extract insights...",
+    llm_config=llm_config
 )
 
+writer = AssistantAgent(
+    name="writer",
+    system_message="You write comprehensive reports...",
+    llm_config=llm_config
+)
+
+# Create group chat for collaboration
+groupchat = GroupChat(
+    agents=[researcher, analyst, writer],
+    messages=[],
+    max_round=10
+)
+
+# Manager orchestrates the conversation
+manager = GroupChatManager(groupchat=groupchat, llm_config=llm_config)
+
+# Start workflow
+user_proxy = UserProxyAgent(name="user", human_input_mode="NEVER")
 user_proxy.initiate_chat(
-    assistant,
-    message="Task description"
+    manager,
+    message="Research and write a report on AI trends"
 )
 ```
+
+**CrewAI**
+```python
+from crewai import Agent, Task, Crew
+
+# Define agents with specific roles
+researcher = Agent(
+    role='Senior Researcher',
+    goal='Find accurate information',
+    backstory='Expert at research with years of experience',
+    tools=[search_tool, scraper_tool]
+)
+
+writer = Agent(
+    role='Content Writer',
+    goal='Create engaging content',
+    backstory='Skilled writer with strong communication',
+    tools=[writing_tool]
+)
+
+# Define tasks
+research_task = Task(
+    description='Research AI agent trends',
+    agent=researcher,
+    expected_output='Detailed research findings'
+)
+
+writing_task = Task(
+    description='Write article based on research',
+    agent=writer,
+    context=[research_task]  # Depends on research_task
+)
+
+# Create crew (orchestrator)
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[research_task, writing_task],
+    process='sequential'  # or 'hierarchical'
+)
+
+# Execute workflow
+result = crew.kickoff()
+```
+
+**LangGraph (State Machine)**
+```python
+from langgraph.graph import StateGraph, END
+
+# Define workflow state
+class WorkflowState:
+    query: str
+    research_data: str
+    analysis: str
+    final_report: str
+
+# Define workflow graph
+workflow = StateGraph(WorkflowState)
+
+# Add nodes (agents)
+workflow.add_node("research", research_agent)
+workflow.add_node("analyze", analysis_agent)
+workflow.add_node("write", writing_agent)
+
+# Define edges (flow)
+workflow.add_edge("research", "analyze")
+workflow.add_edge("analyze", "write")
+workflow.add_edge("write", END)
+
+# Set entry point
+workflow.set_entry_point("research")
+
+# Compile and run
+app = workflow.compile()
+result = app.invoke({"query": "AI agent trends"})
+```
+
+#### Real-World Workflow Examples
+
+**1. Content Creation Workflow**
+```
+User Query → Researcher → Fact Checker → Writer → Editor → Publisher
+```
+
+**2. Software Development Workflow**
+```
+Requirements Agent → Architect → Developer → Tester → Reviewer
+```
+
+**3. Data Analysis Workflow**
+```
+Data Collector → Cleaner → Analyzer → Visualizer → Report Generator
+```
+
+**4. Customer Support Workflow**
+```
+Intent Classifier → Knowledge Base Agent → Response Generator → Quality Checker
+```
+
+#### Best Practices
+
+**Clear Role Definition**
+- Each agent has specific expertise
+- Non-overlapping responsibilities
+- Clear inputs and outputs
+
+**Effective Communication**
+- Structured message formats
+- Shared context/memory
+- Clear handoff protocols
+
+**Error Handling**
+- Retry mechanisms
+- Fallback agents
+- Validation at each step
+
+**Monitoring & Logging**
+- Track agent interactions
+- Log decision points
+- Measure performance metrics
+
+**Human-in-the-Loop**
+- Critical decision approval
+- Quality checkpoints
+- Override capabilities
 
 ### 9. Agent Evaluation
 
